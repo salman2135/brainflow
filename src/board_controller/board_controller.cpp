@@ -35,6 +35,7 @@
 #include "emotibit.h"
 #include "enophone.h"
 #include "explore.h"
+#include "explore_ble.h"
 #include "freeeeg.h"
 #include "galea.h"
 #include "galea_serial.h"
@@ -284,6 +285,9 @@ int prepare_session (int board_id, const char *json_brainflow_input_params)
         case BoardIds::NEUROPAWN_KNIGHT_BOARD:
             board =
                 std::shared_ptr<Board> (new Knight ((int)BoardIds::NEUROPAWN_KNIGHT_BOARD, params));
+            break;
+        case BoardIds::EXPLORE_PRO_32_CHAN_BOARD:
+            board = std::shared_ptr<Board> (new ExplorePro (board_id, params));
             break;
         default:
             return (int)BrainFlowExitCodes::UNSUPPORTED_BOARD_ERROR;

@@ -75,6 +75,7 @@ class BoardIds(enum.IntEnum):
     EXPLORE_PLUS_32_CHAN_BOARD = 55 #:
     PIEEG_BOARD = 56  #:
     NEUROPAWN_KNIGHT_BOARD = 57 #:
+    EXPLORE_PRO_32_CHAN_BOARD = 58 #:
 
 
 class IpProtocolTypes(enum.IntEnum):
