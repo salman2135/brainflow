@@ -10,7 +10,10 @@ class ExplorePro : public BLELibBoard
 {
 
 private:
-    int test = 0;
+    void parseBuffer();
+    uint16_t extractUint16(const uint8_t* buffer);
+    uint32_t extractUint32(const uint8_t* buffer);
+    void processPacket(const uint8_t* packet);
 public:
     ExplorePro (int board_id, struct BrainFlowInputParams params);
     ~ExplorePro ();
@@ -35,4 +38,8 @@ protected:
     volatile simpleble_adapter_t explore_pro_adapter;
     std::pair<simpleble_uuid_t, simpleble_uuid_t> write_characteristics;
     std::pair<simpleble_uuid_t, simpleble_uuid_t> notified_characteristics;
+    uint8_t sharedBuffer[1024];
+    size_t bufferLength = 0;
+    size_t MAX_BUFFER_SIZE = 1024;
+    size_t HEADER_SIZE = 8;
 };

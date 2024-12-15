@@ -151,7 +151,9 @@ int ExplorePro::prepare_session ()
                 }
                 if (strcmp (service.characteristics[j].uuid.value,
                         ExplorePro_NOTIFY_CHAR) == 0) // Notification Characteristics
-                {
+                {   
+                    safe_logger (spdlog::level::trace, "found notify characteristics");
+                    initialized = true;
                     if (simpleble_peripheral_notify (explore_pro_peripheral, service.uuid,
                             service.characteristics[j].uuid, ::ExplorePro_read_notifications,
                             (void *)this) == SIMPLEBLE_SUCCESS)
@@ -184,7 +186,7 @@ int ExplorePro::prepare_session ()
 int ExplorePro::start_stream (int buffer_size, const char *streamer_params)
 {
     if (!initialized)
-    {
+    {   
         return (int)BrainFlowExitCodes::BOARD_NOT_CREATED_ERROR;
     }
     int res = prepare_for_acquisition (buffer_size, streamer_params);
@@ -343,8 +345,76 @@ void ExplorePro::adapter_1_on_scan_found (
     }
 }
 
+uint16_t ExplorePro::extractUint16(const uint8_t* buffer) {
+    return (buffer[1] << 8) | buffer[0];
+}
+
+uint32_t ExplorePro::extractUint32(const uint8_t* buffer) {
+    return (buffer[3] << 24) | (buffer[2] << 16) | (buffer[1] << 8) | buffer[0];
+}
+
+void ExplorePro::processPacket(const uint8_t* packet) {
+    uint8_t packetID = packet[0];
+    uint8_t count = packet[1];
+    uint16_t payloadLength = extractUint16(packet + 2);
+    uint32_t timestamp = extractUint32(packet + 4);
+
+    // Extract the payload
+    const uint8_t* payload = packet + 8;
+
+    // Print packet details
+    safe_logger (spdlog::level::debug, "value pid {}", packetID);
+    safe_logger (spdlog::level::debug, "value for for payloadLength {}", payloadLength);
+    safe_logger (spdlog::level::debug, "value for for timestamp {}", timestamp);
+}
+
+void ExplorePro::parseBuffer() {
+    size_t offset = 0;
+
+    while (bufferLength - offset >= 8) {
+        // Parse the header
+        uint8_t* packet = sharedBuffer + offset;
+        uint16_t payloadLength = extractUint16(packet + 6);
+        size_t totalPacketSize = 8 + payloadLength + 4; // Header + Payload + Terminator
+
+        // Check if we have a complete packet
+        if (bufferLength - offset < totalPacketSize) {
+            // Incomplete packet, stop parsing
+            break;
+        }
+
+        // Process the complete packet
+        processPacket(packet);
+
+        // Move to the next packet
+        offset += totalPacketSize;
+    }
+
+    // Shift remaining data to the beginning of the buffer
+    size_t remainingLength = bufferLength - offset;
+    if (remainingLength > 0) {
+        std::memmove(sharedBuffer, sharedBuffer + offset, remainingLength);
+    }
+    bufferLength = remainingLength;
+    
+}
+
+
 void ExplorePro::read_data (simpleble_uuid_t service, simpleble_uuid_t characteristic,
     uint8_t *data, size_t size, int channel_num)
-{
-    safe_logger (spdlog::level::debug, "Got data from device!");
+{   
+
+        // Check for buffer overflow
+    if (bufferLength + size > MAX_BUFFER_SIZE) {
+        safe_logger (spdlog::level::debug, "Buffer overflow!");
+        bufferLength = 0; // Clear buffer on overflow
+        return;
+    }
+
+    // Append new data to the shared buffer
+    std::memcpy(sharedBuffer + bufferLength, data, size);
+    bufferLength += size;
+
+    // Parse the buffer
+    parseBuffer();
 }
