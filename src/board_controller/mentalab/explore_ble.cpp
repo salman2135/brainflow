@@ -151,12 +151,12 @@ int ExplorePro::prepare_session ()
                 }
                 if (strcmp (service.characteristics[j].uuid.value,
                         ExplorePro_NOTIFY_CHAR) == 0) // Notification Characteristics
-                {
+                {   
                     if (simpleble_peripheral_notify (explore_pro_peripheral, service.uuid,
                             service.characteristics[j].uuid, ::ExplorePro_read_notifications,
                             (void *)this) == SIMPLEBLE_SUCCESS)
                     {
-
+                        initialized = true;
                         notified_characteristics = std::pair<simpleble_uuid_t, simpleble_uuid_t> (
                             service.uuid, service.characteristics[j].uuid);
                     }
