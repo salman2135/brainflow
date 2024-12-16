@@ -362,5 +362,26 @@ void ExplorePro::read_data (simpleble_uuid_t service, simpleble_uuid_t character
         package[eeg_channels[i]] = 400000;
     }
     package[board_descr["default"]["timestamp_channel"].get<int> ()] = get_timestamp ();
-    push_package (&package[0]);
+    push_package (&package[0]); 
+
+    //ORN data
+    int num_rows_orn = board_descr["auxiliary"]["num_rows"];
+    double *package_orn = new double[num_rows_orn];
+    for (int i = 0; i < num_rows_orn; i++)
+    {
+        package[i] = 0.0;
+    }
+    
+    std::vector<int> accel_channels = board_descr["auxiliary"]["accel_channels"];
+    std::vector<int> gyro_channels = board_descr["auxiliary"]["gyro_channels"];
+    std::vector<int> mag_channels = board_descr["auxiliary"]["magnetometer_channels"];
+
+    for(int i=0;i<3;i++)
+    {
+        package_orn[accel_channels[i]] = -0.061;
+        package_orn[gyro_channels[i]] = -8.75 + i * 0.02;
+        package_orn[mag_channels[i]] = -953.04 + i * 0.03;
+    }
+    package_orn[board_descr["auxiliary"]["timestamp_channel"].get<int> ()] = get_timestamp ();
+    push_package (&package_orn[0]);    
 }
