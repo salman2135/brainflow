@@ -159,6 +159,7 @@ int ExplorePro::prepare_session ()
                         initialized = true;
                         notified_characteristics = std::pair<simpleble_uuid_t, simpleble_uuid_t> (
                             service.uuid, service.characteristics[j].uuid);
+                            return (int)BrainFlowExitCodes::STATUS_OK;
                     }
                     else
                     {
