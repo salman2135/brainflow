@@ -348,4 +348,19 @@ void ExplorePro::read_data (simpleble_uuid_t service, simpleble_uuid_t character
     uint8_t *data, size_t size, int channel_num)
 {
     safe_logger (spdlog::level::debug, "Got data from device!");
+    int num_rows = board_descr["default"]["num_rows"];
+    double *package = new double[num_rows];
+    for (int i = 0; i < num_rows; i++)
+    {
+        package[i] = 0.0;
+    }
+    
+    std::vector<int> eeg_channels = board_descr["default"]["eeg_channels"];
+
+    for(int i=0;i<32;i++)
+    {
+        package[eeg_channels[i]] = 400000;
+    }
+    package[board_descr["default"]["timestamp_channel"].get<int> ()] = get_timestamp ();
+    push_package (&package[0]);
 }
