@@ -11,6 +11,7 @@ class ExplorePro : public BLELibBoard
 
 private:
     int test = 0;
+    std::vector<uint8_t> leftover_data_;
 public:
     ExplorePro (int board_id, struct BrainFlowInputParams params);
     ~ExplorePro ();

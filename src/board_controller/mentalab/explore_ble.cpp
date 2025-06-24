@@ -344,44 +344,115 @@ void ExplorePro::adapter_1_on_scan_found (
     }
 }
 
-void ExplorePro::read_data (simpleble_uuid_t service, simpleble_uuid_t characteristic,
-    uint8_t *data, size_t size, int channel_num)
+void ExplorePro::read_data(simpleble_uuid_t service, simpleble_uuid_t characteristic,
+                           uint8_t* data, size_t size, int channel_num)
 {
-    safe_logger (spdlog::level::debug, "Got data from device!");
-    int num_rows = board_descr["default"]["num_rows"];
-    double *package = new double[num_rows];
-    for (int i = 0; i < num_rows; i++)
-    {
-        package[i] = 0.0;
-    }
-    
-    std::vector<int> eeg_channels = board_descr["default"]["eeg_channels"];
+    // Combine leftover data from last call with the new data
+    std::vector<uint8_t> combined;
+    combined.insert(combined.end(), leftover_data_.begin(), leftover_data_.end());
+    combined.insert(combined.end(), data, data + size);
+    leftover_data_.clear();
 
-    for(int i=0;i<32;i++)
-    {
-        package[eeg_channels[i]] = 400000;
-    }
-    package[board_descr["default"]["timestamp_channel"].get<int> ()] = get_timestamp ();
-    push_package (&package[0]); 
+    size_t offset = 0;
+    size_t total_size = combined.size();
+    const uint8_t* full_data = combined.data();
 
-    //ORN data
-    int num_rows_orn = board_descr["auxiliary"]["num_rows"];
-    double *package_orn = new double[num_rows_orn];
-    for (int i = 0; i < num_rows_orn; i++)
-    {
-        package[i] = 0.0;
-    }
-    
-    std::vector<int> accel_channels = board_descr["auxiliary"]["accel_channels"];
-    std::vector<int> gyro_channels = board_descr["auxiliary"]["gyro_channels"];
-    std::vector<int> mag_channels = board_descr["auxiliary"]["magnetometer_channels"];
+    while (offset + 12 <= total_size) {
+        const uint8_t* header = full_data + offset;
+        uint8_t pid = header[0];
 
-    for(int i=0;i<3;i++)
-    {
-        package_orn[accel_channels[i]] = -0.061;
-        package_orn[gyro_channels[i]] = -8.75 + i * 0.02;
-        package_orn[mag_channels[i]] = -953.04 + i * 0.03;
+        uint16_t payload;
+        std::memcpy(&payload, header + 2, sizeof(uint16_t));
+
+        uint64_t timestamp;
+        std::memcpy(&timestamp, header + 4, sizeof(uint64_t));
+        double timestampSeconds = timestamp / 100000.0;
+
+        safe_logger(spdlog::level::info, "Got data from device! PID: {}, payload: {}, timestamp: {}",
+                    pid, payload, timestampSeconds);
+
+        // Check if full payload is available
+        if (payload > 550 || offset + 4 + payload > total_size) {
+            safe_logger(spdlog::level::warn,
+                        payload > 550
+                            ? "Invalid payload size : payload {} offset {} size {}"
+                            : "Payload exceeds available data size: payload {} offset {} size {}",
+                        payload, offset, total_size);
+            break;  // incomplete or invalid packet
+        }
+
+        size_t data_len = payload - 8;
+        const uint8_t* payload_data = header + 12;
+
+        // Check end marker
+        bool valid_marker = (data_len >= 4 &&
+            payload_data[data_len - 4] == 0xAF &&
+            payload_data[data_len - 3] == 0xBE &&
+            payload_data[data_len - 2] == 0xAD &&
+            payload_data[data_len - 1] == 0xDE);
+
+        safe_logger(spdlog::level::debug, valid_marker ? "End marker detected :D" : "Invalid/missing end marker");
+
+        if (pid == 152) {
+            if ((data_len - 4) % 3 == 0) {
+                safe_logger(spdlog::level::debug, "Data is aligned (multiple of 3).");
+            } else {
+                safe_logger(spdlog::level::debug, "Data is NOT aligned! data length: {}, offset: {}", data_len, offset);
+            }
+
+            // EEG data processing
+            int num_rows = board_descr["default"]["num_rows"];
+            double* package = new double[num_rows];
+            std::fill(package, package + num_rows, 0.0);
+
+            std::vector<int> eeg_channels = board_descr["default"]["eeg_channels"];
+            for (int i = 0; i < 32; ++i) {
+                package[eeg_channels[i]] = -400000;
+            }
+
+            package[board_descr["default"]["timestamp_channel"].get<int>()] = get_timestamp();
+
+            constexpr double SCALE_FACTOR = 2.4 / (8388607.0 * 6.0 * 1e-6);
+            std::vector<double> scaled_values;
+
+            for (size_t i = 0; i < data_len - 4; i += 3) {
+                uint32_t val = 0;
+                val |= static_cast<uint32_t>(payload_data[i])     << 16;
+                val |= static_cast<uint32_t>(payload_data[i + 1]) << 8;
+                val |= static_cast<uint32_t>(payload_data[i + 2]);
+                double scaled = static_cast<double>(val) * SCALE_FACTOR;
+                scaled_values.push_back(scaled);
+            }
+
+            push_package(package);
+            delete[] package;
+
+            // ORN data mock-up
+            int num_rows_orn = board_descr["auxiliary"]["num_rows"];
+            double* package_orn = new double[num_rows_orn];
+            std::fill(package_orn, package_orn + num_rows_orn, 0.0);
+
+            auto accel_channels = board_descr["auxiliary"]["accel_channels"];
+            auto gyro_channels  = board_descr["auxiliary"]["gyro_channels"];
+            auto mag_channels   = board_descr["auxiliary"]["magnetometer_channels"];
+
+            for (int i = 0; i < 3; ++i) {
+                package_orn[accel_channels[i]] = -0.061;
+                package_orn[gyro_channels[i]]  = -8.75 + i * 0.02;
+                package_orn[mag_channels[i]]   = -953.04 + i * 0.03;
+            }
+
+            package_orn[board_descr["auxiliary"]["timestamp_channel"].get<int>()] = get_timestamp();
+            push_package(package_orn);
+            delete[] package_orn;
+        }
+
+        offset += 12 + data_len;
     }
-    package_orn[board_descr["auxiliary"]["timestamp_channel"].get<int> ()] = get_timestamp ();
-    push_package (&package_orn[0]);    
+
+    // Save leftover unprocessed bytes
+    if (offset < total_size) {
+        leftover_data_.assign(combined.begin() + offset, combined.end());
+        safe_logger(spdlog::level::debug, "Saved {} leftover bytes for next read", leftover_data_.size());
+    }
 }
