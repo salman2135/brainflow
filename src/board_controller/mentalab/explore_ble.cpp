@@ -405,15 +405,10 @@ void ExplorePro::read_data(simpleble_uuid_t service, simpleble_uuid_t characteri
             double* package = new double[num_rows];
             std::fill(package, package + num_rows, 0.0);
 
-            std::vector<int> eeg_channels = board_descr["default"]["eeg_channels"];
-            for (int i = 0; i < 32; ++i) {
-                package[eeg_channels[i]] = -400000;
-            }
 
-            package[board_descr["default"]["timestamp_channel"].get<int>()] = get_timestamp();
+            package[board_descr["default"]["timestamp_channel"].get<int>()] = timestampSeconds;
 
             constexpr double SCALE_FACTOR = 2.4 / (8388607.0 * 6.0 * 1e-6);
-            std::vector<double> scaled_values;
 
             for (size_t i = 0; i < data_len - 4; i += 3) {
                 uint32_t val = 0;
@@ -421,30 +416,40 @@ void ExplorePro::read_data(simpleble_uuid_t service, simpleble_uuid_t characteri
                 val |= static_cast<uint32_t>(payload_data[i + 1]) << 8;
                 val |= static_cast<uint32_t>(payload_data[i + 2]);
                 double scaled = static_cast<double>(val) * SCALE_FACTOR;
-                scaled_values.push_back(scaled);
+                package[i / 3 + 1] = scaled;
             }
 
-            push_package(package);
+            push_package (package, (int)BrainFlowPresets::DEFAULT_PRESET);
             delete[] package;
+        }
 
-            // ORN data mock-up
-            int num_rows_orn = board_descr["auxiliary"]["num_rows"];
-            double* package_orn = new double[num_rows_orn];
-            std::fill(package_orn, package_orn + num_rows_orn, 0.0);
+        if (pid == 14)
+        {
+            int num_rows = board_descr["auxiliary"]["num_rows"];
+            double* package = new double[num_rows];
+            std::fill(package, package + num_rows, 0.0);
 
-            auto accel_channels = board_descr["auxiliary"]["accel_channels"];
-            auto gyro_channels  = board_descr["auxiliary"]["gyro_channels"];
-            auto mag_channels   = board_descr["auxiliary"]["magnetometer_channels"];
+            package[board_descr["auxiliary"]["timestamp_channel"].get<int>()] = timestampSeconds;
+            std::vector<int> accel_channels = board_descr["auxiliary"]["accel_channels"];
+            std::vector<int> gyro_channels = board_descr["auxiliary"]["gyro_channels"];
+            std::vector<int> magnetometer_channels = board_descr["auxiliary"]["magnetometer_channels"];
 
-            for (int i = 0; i < 3; ++i) {
-                package_orn[accel_channels[i]] = -0.061;
-                package_orn[gyro_channels[i]]  = -8.75 + i * 0.02;
-                package_orn[mag_channels[i]]   = -953.04 + i * 0.03;
-            }
+            int16_t raw_data[9];
+            std::memcpy(raw_data, payload_data, 18);
 
-            package_orn[board_descr["auxiliary"]["timestamp_channel"].get<int>()] = get_timestamp();
-            push_package(package_orn);
-            delete[] package_orn;
+            for (int i = 0; i < 3; ++i)
+            package[accel_channels[i]] = 0.122 * static_cast<double>(raw_data[i]);
+
+            // Convert and store gyroscope (3:5)
+            for (int i = 0; i < 3; ++i)
+            package[gyro_channels[i]] = 70.0 * static_cast<double>(raw_data[i + 3]);
+
+            // Convert and store magnetometer (6:8), apply sign change
+            const double mag_signs[3] = {-1.0, 1.0, 1.0};
+            for (int i = 0; i < 3; ++i)
+            package[magnetometer_channels[i]] = 1.52 * static_cast<double>(raw_data[i + 6]) * mag_signs[i];
+            push_package (package, (int)BrainFlowPresets::AUXILIARY_PRESET);
+            delete[] package;
         }
 
         offset += 12 + data_len;

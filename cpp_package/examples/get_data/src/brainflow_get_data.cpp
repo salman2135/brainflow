@@ -21,7 +21,9 @@ int main (int argc, char *argv[])
 
     BoardShim::get_board_presets (-1);
     struct BrainFlowInputParams params;
-    int board_id = 0;
+    int board_id = 58;
+    std::string mac_address = "e8:e1:e9:79:6f:c9";
+    params.mac_address = mac_address;
     if (!parse_args (argc, argv, &params, &board_id))
     {
         return -1;

@@ -1,7 +1,9 @@
-﻿using System;
+﻿
+using System;
 
 using brainflow;
 using brainflow.math;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 namespace examples
@@ -13,18 +15,19 @@ namespace examples
             BoardShim.enable_dev_board_logger ();
 
             BrainFlowInputParams input_params = new BrainFlowInputParams ();
-            int board_id = parse_args (args, input_params);
+            input_params.mac_address = "e8:e1:e9:79:6f:c9";
+            //input_params.mac_address = "d2:64:ca:33:ed:c0";
+            int board_id = 58;
 
             BoardShim board_shim = new BoardShim (board_id, input_params);
             board_shim.prepare_session ();
             board_shim.start_stream ();
             System.Threading.Thread.Sleep (5000);
             board_shim.stop_stream ();
-            double[,] unprocessed_data = board_shim.get_current_board_data (20);
-            int[] eeg_channels = BoardShim.get_eeg_channels (board_id);
-            foreach (var index in eeg_channels)
-                Console.WriteLine ("[{0}]", string.Join (", ", unprocessed_data.GetRow (index)));
+            double[,] unprocessed_data = board_shim.get_current_board_data (500, (int)BrainFlowPresets.AUXILIARY_PRESET);
+            DataFilter.write_file (unprocessed_data, "test.csv", "w");
             board_shim.release_session ();
+
         }
 
         static int parse_args (string[] args, BrainFlowInputParams input_params)
