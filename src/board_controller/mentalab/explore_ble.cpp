@@ -437,17 +437,13 @@ void ExplorePro::read_data(simpleble_uuid_t service, simpleble_uuid_t characteri
             int16_t raw_data[9];
             std::memcpy(raw_data, payload_data, 18);
 
-            for (int i = 0; i < 3; ++i)
-            package[accel_channels[i]] = 0.122 * static_cast<double>(raw_data[i]);
-
-            // Convert and store gyroscope (3:5)
-            for (int i = 0; i < 3; ++i)
-            package[gyro_channels[i]] = 70.0 * static_cast<double>(raw_data[i + 3]);
-
-            // Convert and store magnetometer (6:8), apply sign change
-            const double mag_signs[3] = {-1.0, 1.0, 1.0};
-            for (int i = 0; i < 3; ++i)
-            package[magnetometer_channels[i]] = 1.52 * static_cast<double>(raw_data[i + 6]) * mag_signs[i];
+            for (int i = 0; i < 3; ++i){
+                const double mag_signs[3] = {-1.0, 1.0, 1.0};
+                package[accel_channels[i]] = 0.122 * static_cast<double>(raw_data[i]);
+                package[gyro_channels[i]] = 70.0 * static_cast<double>(raw_data[i + 3]);
+                package[magnetometer_channels[i]] = 1.52 * static_cast<double>(raw_data[i + 6]) * mag_signs[i];
+            }
+            
             push_package (package, (int)BrainFlowPresets::AUXILIARY_PRESET);
             delete[] package;
         }
