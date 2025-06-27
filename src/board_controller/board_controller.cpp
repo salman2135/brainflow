@@ -289,6 +289,12 @@ int prepare_session (int board_id, const char *json_brainflow_input_params)
         case BoardIds::EXPLORE_PRO_32_CHAN_BOARD:
             board = std::shared_ptr<Board> (new ExplorePro (board_id, params));
             break;
+        case BoardIds::EXPLORE_PRO_16_CHAN_BOARD:
+            board = std::shared_ptr<Board> (new ExplorePro (board_id, params));
+            break;
+        case BoardIds::EXPLORE_PRO_8_CHAN_BOARD:
+            board = std::shared_ptr<Board> (new ExplorePro (board_id, params));
+            break;
         default:
             return (int)BrainFlowExitCodes::UNSUPPORTED_BOARD_ERROR;
     }

@@ -117,7 +117,9 @@ namespace brainflow
         EXPLORE_PLUS_32_CHAN_BOARD = 55,
         PIEEG_BOARD = 56,   
         NEUROPAWN_KNIGHT_BOARD = 57,
-        EXPLORE_PRO_32_CHAN_BOARD = 58
+        EXPLORE_PRO_32_CHAN_BOARD = 58,
+        EXPLORE_PRO_16_CHAN_BOARD = 59,
+        EXPLORE_PRO_8_CHAN_BOARD = 60
     };
 
 

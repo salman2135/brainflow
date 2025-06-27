@@ -15,16 +15,16 @@ namespace examples
             BoardShim.enable_dev_board_logger ();
 
             BrainFlowInputParams input_params = new BrainFlowInputParams ();
-            input_params.mac_address = "e8:e1:e9:79:6f:c9";
-            //input_params.mac_address = "d2:64:ca:33:ed:c0";
-            int board_id = 58;
+            //input_params.mac_address = "e8:e1:e9:79:6f:c9";
+            input_params.mac_address = "d2:64:ca:33:ed:c0";
+            int board_id = 60;
 
             BoardShim board_shim = new BoardShim (board_id, input_params);
             board_shim.prepare_session ();
             board_shim.start_stream ();
             System.Threading.Thread.Sleep (5000);
             board_shim.stop_stream ();
-            double[,] unprocessed_data = board_shim.get_current_board_data (500, (int)BrainFlowPresets.AUXILIARY_PRESET);
+            double[,] unprocessed_data = board_shim.get_current_board_data (500, (int)BrainFlowPresets.DEFAULT_PRESET);
             DataFilter.write_file (unprocessed_data, "test.csv", "w");
             board_shim.release_session ();
 

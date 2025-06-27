@@ -393,7 +393,7 @@ void ExplorePro::read_data(simpleble_uuid_t service, simpleble_uuid_t characteri
 
         safe_logger(spdlog::level::debug, valid_marker ? "End marker detected :D" : "Invalid/missing end marker");
 
-        if (pid == 152) {
+        if ((pid == 151) || (pid == 152) || (pid == 153)) {
             if ((data_len - 4) % 3 == 0) {
                 safe_logger(spdlog::level::debug, "Data is aligned (multiple of 3).");
             } else {
@@ -404,7 +404,6 @@ void ExplorePro::read_data(simpleble_uuid_t service, simpleble_uuid_t characteri
             int num_rows = board_descr["default"]["num_rows"];
             double* package = new double[num_rows];
             std::fill(package, package + num_rows, 0.0);
-
 
             package[board_descr["default"]["timestamp_channel"].get<int>()] = timestampSeconds;
 

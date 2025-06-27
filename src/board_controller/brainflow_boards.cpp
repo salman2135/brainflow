@@ -76,7 +76,9 @@ BrainFlowBoards::BrainFlowBoards()
             {"55", json::object()},
             {"56", json::object()},
             {"57", json::object()},
-            {"58", json::object()}
+            {"58", json::object()},
+            {"59", json::object()},
+            {"60", json::object()}
         }
     }};
 
@@ -1123,6 +1125,54 @@ BrainFlowBoards::BrainFlowBoards()
     brainflow_boards_json["boards"]["58"]["auxiliary"] =
     {
         {"name", "ExplorePro32Channels"},
+        {"sampling_rate", 20},
+        {"timestamp_channel", 10},
+        {"marker_channel", 11},
+        {"package_num_channel", 0},
+        {"num_rows", 12},
+        {"accel_channels", {1, 2, 3}},
+        {"gyro_channels", {4, 5, 6}},
+        {"magnetometer_channels", {7, 8, 9}}
+    };
+        brainflow_boards_json["boards"]["59"]["default"] =
+    {
+        {"name", "ExplorePro16Channels"},
+        {"sampling_rate", 250},
+        {"timestamp_channel", 17},
+        {"marker_channel", 18},
+        {"package_num_channel", 0},
+        {"num_rows", 19},
+        {"eeg_channels", {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}},
+        {"emg_channels", {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}},
+        {"ecg_channels", {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}}
+    };
+    brainflow_boards_json["boards"]["59"]["auxiliary"] =
+    {
+        {"name", "ExplorePro16Channels"},
+        {"sampling_rate", 20},
+        {"timestamp_channel", 10},
+        {"marker_channel", 11},
+        {"package_num_channel", 0},
+        {"num_rows", 12},
+        {"accel_channels", {1, 2, 3}},
+        {"gyro_channels", {4, 5, 6}},
+        {"magnetometer_channels", {7, 8, 9}}
+    };
+        brainflow_boards_json["boards"]["60"]["default"] =
+    {
+        {"name", "ExplorePro8Channels"},
+        {"sampling_rate", 250},
+        {"timestamp_channel", 9},
+        {"marker_channel", 10},
+        {"package_num_channel", 0},
+        {"num_rows", 11},
+        {"eeg_channels", {1, 2, 3, 4, 5, 6, 7, 8}},
+        {"emg_channels", {1, 2, 3, 4, 5, 6, 7, 8}},
+        {"ecg_channels", {1, 2, 3, 4, 5, 6, 7, 8}}
+    };
+    brainflow_boards_json["boards"]["60"]["auxiliary"] =
+    {
+        {"name", "ExplorePro8Channels"},
         {"sampling_rate", 20},
         {"timestamp_channel", 10},
         {"marker_channel", 11},
