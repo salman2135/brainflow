@@ -21,7 +21,7 @@ static void ExplorePro_read_notifications (simpleble_uuid_t service,
 }
 
 ExplorePro::ExplorePro (int board_id, struct BrainFlowInputParams params)
-    : BLELibBoard ((int)BoardIds::EXPLORE_PRO_32_CHAN_BOARD, params)
+    : BLELibBoard ((int)BoardIds::EXPLORE_PRO_8_CHAN_BOARD, params)
 {
 }
 
@@ -402,10 +402,11 @@ void ExplorePro::read_data(simpleble_uuid_t service, simpleble_uuid_t characteri
 
             // EEG data processing
             int num_rows = board_descr["default"]["num_rows"];
+            safe_logger(spdlog::level::debug, " Number of rows in package: {}", num_rows);
             double* package = new double[num_rows];
             std::fill(package, package + num_rows, 0.0);
 
-            package[board_descr["default"]["timestamp_channel"].get<int>()] = timestampSeconds;
+            
 
             constexpr double SCALE_FACTOR = 2.4 / (8388607.0 * 6.0 * 1e-6);
 
@@ -417,7 +418,7 @@ void ExplorePro::read_data(simpleble_uuid_t service, simpleble_uuid_t characteri
                 double scaled = static_cast<double>(val) * SCALE_FACTOR;
                 package[i / 3 + 1] = scaled;
             }
-
+            package[board_descr["default"]["timestamp_channel"].get<int>()] = timestampSeconds;
             push_package (package, (int)BrainFlowPresets::DEFAULT_PRESET);
             delete[] package;
         }
